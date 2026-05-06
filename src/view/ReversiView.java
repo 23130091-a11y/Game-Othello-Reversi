@@ -8,13 +8,34 @@ import model.ReversiModel;
 public class ReversiView extends JFrame {
     private JButton[][] cells;
     private JLabel statusLabel;
+    private JLabel modeLabel;
+
+    private CardLayout cardLayout;
+    private JPanel cardContainer;
+    private MainMenuPanel menuPanel;
+    private JPanel gamePanel;
+    private JButton btnBackToMenu;
 
     public ReversiView() {
         // tao cua so
         setTitle("Game Reversi");
-        setSize(600, 650);
+        setSize(600, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setLayout(new BorderLayout());
+
+        cardLayout = new CardLayout();
+        cardContainer = new JPanel(cardLayout);
+
+        // menu card
+        menuPanel = new MainMenuPanel();
+        cardContainer.add(menuPanel, "MENU");
+
+        // game card
+        gamePanel = new JPanel(new BorderLayout());
+
+        modeLabel = new JLabel("Chế độ: ");
+        modeLabel.setFont(new Font("Segoe UI", Font.BOLD, 14));
+        modeLabel.setBorder(BorderFactory.createEmptyBorder(5, 10, 5, 10));
+        gamePanel.add(modeLabel, BorderLayout.NORTH);
 
         // tao bang 8x8
         JPanel boardPanel = new JPanel();
@@ -34,14 +55,41 @@ public class ReversiView extends JFrame {
                 boardPanel.add(cells[i][j]);
             }
         }
-        add(boardPanel, BorderLayout.CENTER);
+        gamePanel.add(boardPanel, BorderLayout.CENTER);
 
-        // hien thi trang thai
+        // hien thi trang thai va nut ve menu
+        JPanel bottomPanel = new JPanel(new BorderLayout());
         statusLabel = new JLabel("Lượt: Đen");
         statusLabel.setFont(new Font("Arial", Font.PLAIN, 16));
-        add(statusLabel, BorderLayout.SOUTH);
+        bottomPanel.add(statusLabel, BorderLayout.CENTER);
 
+        btnBackToMenu = new JButton("← Về Menu");
+        btnBackToMenu.setFont(new Font("Segoe UI", Font.PLAIN, 12));
+        bottomPanel.add(btnBackToMenu, BorderLayout.EAST);
+
+        gamePanel.add(bottomPanel, BorderLayout.SOUTH);
+
+        cardContainer.add(gamePanel, "GAME");
+
+        add(cardContainer);
         setLocationRelativeTo(null);
+    }
+
+    // Navigation methods
+    public void showMenu() {
+        cardLayout.show(cardContainer, "MENU");
+    }
+
+    public void showGame() {
+        cardLayout.show(cardContainer, "GAME");
+    }
+
+    public MainMenuPanel getMenuPanel() {
+        return menuPanel;
+    }
+
+    public void addBackToMenuListener(ActionListener listener) {
+        btnBackToMenu.addActionListener(listener);
     }
 
     // them su kien click chuot
@@ -89,5 +137,9 @@ public class ReversiView extends JFrame {
     // hien thi thong bao
     public void showMessage(String message) {
         JOptionPane.showMessageDialog(this, message);
+    }
+
+    public void setModeInfo(String info) {
+        modeLabel.setText(info);
     }
 }

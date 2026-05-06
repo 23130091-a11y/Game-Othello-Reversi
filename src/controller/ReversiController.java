@@ -2,6 +2,8 @@ package controller;
 
 import model.ReversiModel;
 import model.ReversiAI;
+import model.GameConfig;
+import model.AiDifficulty;
 import view.ReversiView;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -13,6 +15,7 @@ public class ReversiController implements ActionListener {
     private ReversiAI ai;
     private boolean aiEnabled = true; // Bật/tắt AI
     private int aiPlayer = ReversiModel.WHITE; // AI chơi màu TRẮNG
+    private Timer pendingAiTimer; // Tránh memory leak và move sai khi quay lại menu
 
     public ReversiController(ReversiModel model, ReversiView view) {
         this.model = model;
@@ -22,8 +25,59 @@ public class ReversiController implements ActionListener {
         // dang ky su kien
         this.view.addGameListener(this);
 
-        // cap nhat view lan dau
+        // menu listeners
+        this.view.getMenuPanel().addPvpListener(e -> {
+            configure(GameConfig.pvp());
+            this.view.showGame();
+        });
+
+        this.view.getMenuPanel().addAiEasyListener(e -> {
+            configure(GameConfig.pve(AiDifficulty.EASY));
+            this.view.showGame();
+        });
+
+        this.view.getMenuPanel().addAiNormalListener(e -> {
+            configure(GameConfig.pve(AiDifficulty.NORMAL));
+            this.view.showGame();
+        });
+
+        this.view.getMenuPanel().addAiHardListener(e -> {
+            configure(GameConfig.pve(AiDifficulty.HARD));
+            this.view.showGame();
+        });
+
+        this.view.getMenuPanel().addHowToPlayListener(e -> {
+            new view.HowToPlayDialog(this.view).setVisible(true);
+        });
+
+        this.view.getMenuPanel().addExitListener(e -> System.exit(0));
+
+        this.view.addBackToMenuListener(e -> returnToMenu());
+
+        // Hiển thị Menu khi khởi động
+        this.view.showMenu();
+    }
+
+    public void configure(GameConfig config) {
+        this.aiEnabled = config.isAiEnabled();
+        String info = "Chế độ: " + (aiEnabled ? "Đấu với máy" : "2 Người");
+        if (config.isAiEnabled()) {
+            this.aiPlayer = ReversiModel.WHITE;
+            this.ai = new ReversiAI(aiPlayer);
+            this.ai.setDifficulty(config.getDifficulty());
+            info += " (" + config.getDifficulty().getDisplayName() + ")";
+        }
+        view.setModeInfo(info);
+        model.resetGame();
         updateViewFromModel();
+    }
+
+    public void returnToMenu() {
+        if (pendingAiTimer != null && pendingAiTimer.isRunning()) {
+            pendingAiTimer.stop();
+        }
+        view.getMenuPanel().resetToMain();
+        view.showMenu();
     }
 
     @Override
@@ -75,7 +129,7 @@ public class ReversiController implements ActionListener {
     // AI thực hiện nước đi
     private void aiMove() {
         // Dùng Timer để delay một chút, tránh AI đi ngay lập tức
-        Timer timer = new Timer(500, e -> {
+        pendingAiTimer = new Timer(500, e -> {
             // Tìm nước đi tốt nhất
             int[] bestMove = ai.findBestMove(model.getBoard());
 
@@ -92,23 +146,26 @@ public class ReversiController implements ActionListener {
                 }
             }
         });
-        timer.setRepeats(false);
-        timer.start();
+        pendingAiTimer.setRepeats(false);
+        pendingAiTimer.start();
     }
 
     private void GameOver() {
         String result = model.getGameResult();
         view.showMessage("TRÒ CHƠI KẾT THÚC!\n" + result);
 
-        // hoi choi lai khong
-        int choice = javax.swing.JOptionPane.showConfirmDialog(
-                view, "Bạn có muốn chơi lại không?", "Game Over",
-                javax.swing.JOptionPane.YES_NO_OPTION);
+        Object[] options = { "Chơi lại", "Về Menu", "Thoát" };
+        int choice = javax.swing.JOptionPane.showOptionDialog(
+                view, "Bạn muốn làm gì?", "Game Over",
+                javax.swing.JOptionPane.DEFAULT_OPTION, javax.swing.JOptionPane.QUESTION_MESSAGE,
+                null, options, options[0]);
 
-        if (choice == javax.swing.JOptionPane.YES_OPTION) {
+        if (choice == 0) { // Chơi lại
             model.resetGame();
             updateViewFromModel();
-        } else {
+        } else if (choice == 1) { // Về Menu
+            returnToMenu();
+        } else { // Thoát
             System.exit(0);
         }
     }

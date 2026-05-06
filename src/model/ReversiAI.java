@@ -21,6 +21,10 @@ public class ReversiAI {
         this.bestMove = new int[2];
     }
 
+    public void setDifficulty(AiDifficulty difficulty) {
+        this.maxDepth = difficulty.getDepth();
+    }
+
     public int minimax(boolean maxmin, int[][] state, int depth, int player, int alpha, int beta) {
         // co sở
         if (depth == 0 || isOver(state)) {

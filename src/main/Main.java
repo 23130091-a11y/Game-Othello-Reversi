@@ -10,7 +10,5 @@ public class Main {
         ReversiView view = new ReversiView();
         ReversiController controller = new ReversiController(model, view);
         view.setVisible(true);
-        controller.setAiEnabled(true); // Tắt AI (chơi 2 người)
-        controller.setAiPlayer(ReversiModel.WHITE);
     }
 }
